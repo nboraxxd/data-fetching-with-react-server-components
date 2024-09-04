@@ -1,38 +1,25 @@
-import {
-  ChevronRightIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/20/solid";
+import { prisma } from '@/lib/prisma'
+import { SearchParamsProps } from '@/types'
+import { ChevronRightIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid'
+import Link from 'next/link'
 
-let users = [
-  {
-    name: "Kenneth Bell",
-    email: "kenneth.bell@example.com",
-  },
-  {
-    name: "Mattie Conway",
-    email: "mattie.conway@example.com",
-  },
-  {
-    name: "Lola B. Graham",
-    email: "lolab.graham@example.com",
-  },
-  {
-    name: "Cara Fuentes",
-    email: "cara.fuentes@example.com",
-  },
-];
+const LIMIT = 10
 
-export default function Users() {
+export default async function Users({ searchParams }: SearchParamsProps) {
+  const page = typeof searchParams.page === 'string' ? +searchParams.page : 1
+
+  const users = await prisma.user.findMany({
+    take: LIMIT,
+    skip: (page - 1) * 10,
+  })
+
   return (
     <div className="min-h-screen bg-gray-50 px-8 pt-12">
       <div className="flex items-center justify-between">
         <div className="w-80">
           <div className="relative mt-1 rounded-md shadow-sm">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <MagnifyingGlassIcon
-                className="h-5 w-5 text-gray-400"
-                aria-hidden="true"
-              />
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
             </div>
             <input
               type="text"
@@ -59,12 +46,11 @@ export default function Users() {
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="py-3.5 pl-6 pr-3 text-left text-sm font-semibold text-gray-900">
-                      Name
+                    <th className="w-[62px] py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:w-auto">
+                      ID
                     </th>
-                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Email
-                    </th>
+                    <th className="py-3.5 pl-6 pr-3 text-left text-sm font-semibold text-gray-900">Name</th>
+                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Email</th>
                     <th className="relative py-3.5 pl-3 pr-6">
                       <span className="sr-only">Edit</span>
                     </th>
@@ -72,18 +58,14 @@ export default function Users() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {users.map((user) => (
-                    <tr key={user.email}>
+                    <tr key={user.id}>
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{user.id}</td>
                       <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium text-gray-900">
                         {user.name}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {user.email}
-                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{user.email}</td>
                       <td className="relative whitespace-nowrap py-4 pl-4 pr-6 text-right text-sm font-medium">
-                        <a
-                          href="#"
-                          className="inline-flex items-center text-indigo-600 hover:text-indigo-900"
-                        >
+                        <a href="#" className="inline-flex items-center text-indigo-600 hover:text-indigo-900">
                           Edit
                           <ChevronRightIcon className="h-4 w-4" />
                         </a>
@@ -96,6 +78,7 @@ export default function Users() {
           </div>
         </div>
       </div>
+      <Link href={`/?page=${page + 1}`}>Next</Link>
     </div>
-  );
+  )
 }
