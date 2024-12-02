@@ -1,17 +1,24 @@
 import { prisma } from '@/lib/prisma'
 import { SearchParamsProps } from '@/types'
+import { cn } from '@/utils'
 import { ChevronRightIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import Link from 'next/link'
 
-const LIMIT = 10
+const PAGE_SIZE = 10
 
 export default async function Users({ searchParams }: SearchParamsProps) {
-  const page = typeof searchParams.page === 'string' ? +searchParams.page : 1
+  const totalUsers = await prisma.user.count()
+  const totalPages = Math.ceil(totalUsers / PAGE_SIZE)
+
+  const page = typeof searchParams.page === 'string' ? Math.min(Math.max(+searchParams.page, 1), totalPages) : 1
 
   const users = await prisma.user.findMany({
-    take: LIMIT,
-    skip: (page - 1) * 10,
+    take: PAGE_SIZE,
+    skip: (page - 1) * PAGE_SIZE,
   })
+
+  const paginationClassName =
+    'inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-900 shadow transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
 
   return (
     <div className="min-h-screen bg-gray-50 px-8 pt-12">
@@ -78,7 +85,27 @@ export default async function Users({ searchParams }: SearchParamsProps) {
           </div>
         </div>
       </div>
-      <Link href={`/?page=${page + 1}`}>Next</Link>
+      <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <p className="text-sm text-gray-700">
+          Showing <span className="font-semibold">{(page - 1) * PAGE_SIZE + 1}</span> to{' '}
+          <span className="font-semibold">{Math.min(totalUsers, page * PAGE_SIZE)}</span> of{' '}
+          <span className="font-semibold">{totalUsers}</span> users
+        </p>
+        <div className="ml-auto space-x-2 sm:mr-3">
+          <Link
+            href={page > 2 ? `/?page=${page - 1}` : '/'}
+            className={cn(paginationClassName, { 'pointer-events-none opacity-50': page === 1 })}
+          >
+            Prev
+          </Link>
+          <Link
+            href={page < totalPages ? `/?page=${page + 1}` : `/?page=${totalPages}`}
+            className={cn(paginationClassName, { 'pointer-events-none opacity-50': page === totalPages })}
+          >
+            Next
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
