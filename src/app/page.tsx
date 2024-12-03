@@ -1,10 +1,18 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { ChevronRightIcon } from '@heroicons/react/20/solid'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid'
 
 import { cn } from '@/utils'
 import { SearchParamsProps } from '@/types'
 import { SearchInput } from '@/app/search-input'
+
+interface PaginationLinkProps {
+  children: React.ReactNode
+  currentSearchParams: URLSearchParams
+  direction: 'previous' | 'next'
+  page: number
+  totalPages: number
+}
 
 const PAGE_SIZE = 10
 
@@ -24,10 +32,15 @@ export default async function Users({ searchParams }: SearchParamsProps) {
     where: { name: { contains: search } },
   })
 
-  const hasUsers = totalUsers > 0
+  const currentSearchParams = new URLSearchParams()
 
-  const paginationClassName =
-    'inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-900 shadow transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+  if (search) {
+    currentSearchParams.set('search', search)
+  }
+
+  if (page) {
+    currentSearchParams.set('page', `${page}`)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-8 pt-12">
@@ -63,7 +76,7 @@ export default async function Users({ searchParams }: SearchParamsProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {hasUsers ? (
+                    {totalPages > 0 ? (
                       users.map((user) => (
                         <tr key={user.id}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">
@@ -96,30 +109,73 @@ export default async function Users({ searchParams }: SearchParamsProps) {
         </div>
         <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <p className="text-sm text-gray-700">
-            Showing <span className="font-semibold">{hasUsers ? (page - 1) * PAGE_SIZE + 1 : totalUsers}</span> to{' '}
+            Showing <span className="font-semibold">{totalPages > 0 ? (page - 1) * PAGE_SIZE + 1 : totalUsers}</span> to{' '}
             <span className="font-semibold">{Math.min(totalUsers, page * PAGE_SIZE)}</span> of{' '}
             <span className="font-semibold">{totalUsers}</span> users
           </p>
           {totalPages > 1 ? (
             <div className="ml-auto space-x-2 sm:mr-3">
-              <Link
-                href={page > 2 ? `/?page=${page - 1}` : '/'}
-                className={cn(paginationClassName, { 'pointer-events-none opacity-50': page === 1 })}
+              <PaginationLink
+                currentSearchParams={currentSearchParams}
+                page={page}
+                totalPages={totalPages}
+                direction="previous"
               >
-                Prev
-              </Link>
-              <Link
-                href={hasUsers ? (page < totalPages ? `/?page=${page + 1}` : `/?page=${totalPages}`) : '/'}
-                className={cn(paginationClassName, {
-                  'pointer-events-none opacity-50': page === totalPages || !hasUsers,
-                })}
+                <ChevronLeftIcon className="h-4 w-4" />
+              </PaginationLink>
+              <PaginationLink
+                currentSearchParams={currentSearchParams}
+                page={page}
+                totalPages={totalPages}
+                direction="next"
               >
-                Next
-              </Link>
+                <ChevronRightIcon className="h-4 w-4" />
+              </PaginationLink>
             </div>
           ) : null}
         </div>
       </div>
     </div>
+  )
+}
+
+function PaginationLink({ children, currentSearchParams, page, direction, totalPages }: PaginationLinkProps) {
+  const newSearchParams = new URLSearchParams(currentSearchParams)
+
+  if (direction === 'previous') {
+    if (page > 2) {
+      newSearchParams.set('page', `${page - 1}`)
+    } else {
+      newSearchParams.delete('page')
+    }
+  }
+
+  if (direction === 'next') {
+    if (page < totalPages) {
+      newSearchParams.set('page', `${page + 1}`)
+    } else {
+      newSearchParams.set('page', `${totalPages}`)
+    }
+  }
+
+  const isDisabled = (direction === 'previous' && page === 1) || (direction === 'next' && page === totalPages)
+
+  const paginationClassName =
+    'inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-900 shadow transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+
+  return !isDisabled ? (
+    <Link
+      href={Number(newSearchParams.get('page')) >= 2 ? `/?${newSearchParams}` : '/'}
+      className={paginationClassName}
+    >
+      {children}
+    </Link>
+  ) : (
+    <button
+      className={cn(paginationClassName, 'disabled:pointer-events-none disabled:opacity-50')}
+      disabled={isDisabled}
+    >
+      {children}
+    </button>
   )
 }
