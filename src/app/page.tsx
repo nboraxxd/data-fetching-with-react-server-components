@@ -19,14 +19,12 @@ interface PaginationLinkProps {
 const PAGE_SIZE = 10
 
 export default async function Homepage({ searchParams }: SearchParamsProps) {
-  const search = typeof searchParams.search === 'string' ? searchParams.search : undefined
-
   return (
     <div className="min-h-screen bg-gray-50 px-8 pt-12">
       <div className="container mx-auto max-w-3xl">
         <div className="flex items-center justify-between">
           <div className="w-80">
-            <SearchInput search={search} />
+            <SearchInput />
           </div>
           <div className="ml-16 mt-0 flex-none">
             <button
@@ -52,7 +50,7 @@ export default async function Homepage({ searchParams }: SearchParamsProps) {
 }
 
 async function UserTable({ searchParams }: SearchParamsProps) {
-  await new Promise((resolve) => setTimeout(resolve, 1500))
+  // await new Promise((resolve) => setTimeout(resolve, 1000))
 
   const search = typeof searchParams.search === 'string' ? searchParams.search : undefined
 
